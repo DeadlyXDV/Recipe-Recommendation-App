@@ -50,16 +50,18 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
     fetchRecipeDetail();
   }, [recipeId]);
 
-  const handleSaveClick = () => {
+  const handleSaveClick = async () => {
     if (!user) {
       alert('Silakan login terlebih dahulu untuk menyimpan resep');
       return;
     }
 
+    if (!meal) return;
+
     if (isSaved) {
-      unsaveRecipe(recipeId);
+      await unsaveRecipe(recipeId);
     } else {
-      saveRecipe(recipeId);
+      await saveRecipe(recipeId, meal.strMeal, meal.strMealThumb);
     }
   };
 

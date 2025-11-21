@@ -20,7 +20,7 @@ interface SavedRecipeData {
 }
 
 export function SavedRecipes({ onBack, onViewDetail }: SavedRecipesProps) {
-  const { savedRecipes, unsaveRecipe } = useAuth();
+  const { savedRecipes, unsaveRecipe, loadSavedRecipes } = useAuth();
   const [recipesData, setRecipesData] = useState<SavedRecipeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,13 +28,16 @@ export function SavedRecipes({ onBack, onViewDetail }: SavedRecipesProps) {
     const fetchSavedRecipes = async () => {
       setIsLoading(true);
       try {
+        // Load fresh data from backend
+        await loadSavedRecipes();
+        
         const recipes: SavedRecipeData[] = [];
         
-        // Fetch details for each saved recipe
-        for (const recipeId of savedRecipes) {
+        // Fetch details for each saved recipe from backend
+        for (const savedRecipe of savedRecipes) {
           try {
             const response = await fetch(
-              `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${recipeId}`
+              `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${savedRecipe.recipe_id}`
             );
             const data = await response.json();
             
@@ -49,7 +52,7 @@ export function SavedRecipes({ onBack, onViewDetail }: SavedRecipesProps) {
               });
             }
           } catch (error) {
-            console.error(`Error fetching recipe ${recipeId}:`, error);
+            console.error(`Error fetching recipe ${savedRecipe.recipe_id}:`, error);
           }
         }
         
@@ -61,17 +64,12 @@ export function SavedRecipes({ onBack, onViewDetail }: SavedRecipesProps) {
       }
     };
 
-    if (savedRecipes.length > 0) {
-      fetchSavedRecipes();
-    } else {
-      setIsLoading(false);
-      setRecipesData([]);
-    }
-  }, [savedRecipes]);
+    fetchSavedRecipes();
+  }, [savedRecipes.length]);
 
-  const handleUnsave = (recipeId: string, e: React.MouseEvent) => {
+  const handleUnsave = async (recipeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    unsaveRecipe(recipeId);
+    await unsaveRecipe(recipeId);
   };
 
   return (

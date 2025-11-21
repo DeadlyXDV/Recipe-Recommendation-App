@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authAPI, recipeAPI } from '../lib/api';
 
 interface User {
   id: string;
@@ -6,58 +7,84 @@ interface User {
   email: string;
 }
 
+interface SavedRecipe {
+  id: number;
+  user_id: number;
+  recipe_id: string;
+  recipe_name: string;
+  recipe_image: string;
+  saved_at: string;
+}
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  savedRecipes: string[];
-  saveRecipe: (recipeId: string) => void;
-  unsaveRecipe: (recipeId: string) => void;
+  savedRecipes: SavedRecipe[];
+  saveRecipe: (recipeId: string, recipeName: string, recipeImage: string) => Promise<void>;
+  unsaveRecipe: (recipeId: string) => Promise<void>;
   isRecipeSaved: (recipeId: string) => boolean;
+  loadSavedRecipes: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [savedRecipes, setSavedRecipes] = useState<string[]>([]);
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
 
-  // Load user from localStorage on mount
+  // Load user and token from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const token = localStorage.getItem('token');
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     }
   }, []);
 
-  // Load saved recipes when user changes
+  // Load saved recipes from backend when user changes
   useEffect(() => {
     if (user) {
-      const saved = localStorage.getItem(`savedRecipes_${user.id}`);
-      if (saved) {
-        setSavedRecipes(JSON.parse(saved));
-      }
+      loadSavedRecipes();
     } else {
       setSavedRecipes([]);
     }
   }, [user]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simple mock authentication - check localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const foundUser = users.find(
-      (u: any) => u.email === email && u.password === password
-    );
-
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      return true;
+  const loadSavedRecipes = async () => {
+    try {
+      const response = await recipeAPI.getSavedRecipes();
+      if (response.success) {
+        setSavedRecipes(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading saved recipes:', error);
     }
+  };
 
-    return false;
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await authAPI.login(email, password);
+      
+      if (response.success) {
+        const userData = {
+          id: response.data.user.id.toString(),
+          name: response.data.user.name,
+          email: response.data.user.email
+        };
+        
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', response.data.token);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
   };
 
   const signup = async (
@@ -65,56 +92,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string
   ): Promise<boolean> => {
-    // Check if user already exists
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const existingUser = users.find((u: any) => u.email === email);
-
-    if (existingUser) {
-      return false; // User already exists
+    try {
+      const response = await authAPI.signup(name, email, password);
+      
+      if (response.success) {
+        const userData = {
+          id: response.data.user.id.toString(),
+          name: response.data.user.name,
+          email: response.data.user.email
+        };
+        
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', response.data.token);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Signup error:', error);
+      return false;
     }
-
-    // Create new user
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      email,
-      password,
-    };
-
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-
-    // Auto login after signup
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-
-    return true;
   };
 
   const logout = () => {
     setUser(null);
+    setSavedRecipes([]);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
-  const saveRecipe = (recipeId: string) => {
+  const saveRecipe = async (recipeId: string, recipeName: string, recipeImage: string) => {
     if (!user) return;
 
-    const updated = [...savedRecipes, recipeId];
-    setSavedRecipes(updated);
-    localStorage.setItem(`savedRecipes_${user.id}`, JSON.stringify(updated));
+    try {
+      const response = await recipeAPI.saveRecipe(recipeId, recipeName, recipeImage);
+      if (response.success) {
+        await loadSavedRecipes();
+      }
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+    }
   };
 
-  const unsaveRecipe = (recipeId: string) => {
+  const unsaveRecipe = async (recipeId: string) => {
     if (!user) return;
 
-    const updated = savedRecipes.filter(id => id !== recipeId);
-    setSavedRecipes(updated);
-    localStorage.setItem(`savedRecipes_${user.id}`, JSON.stringify(updated));
+    try {
+      const response = await recipeAPI.unsaveRecipe(recipeId);
+      if (response.success) {
+        await loadSavedRecipes();
+      }
+    } catch (error) {
+      console.error('Error unsaving recipe:', error);
+    }
   };
 
   const isRecipeSaved = (recipeId: string): boolean => {
-    return savedRecipes.includes(recipeId);
+    return savedRecipes.some(recipe => recipe.recipe_id === recipeId);
   };
 
   return (
@@ -128,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         saveRecipe,
         unsaveRecipe,
         isRecipeSaved,
+        loadSavedRecipes,
       }}
     >
       {children}

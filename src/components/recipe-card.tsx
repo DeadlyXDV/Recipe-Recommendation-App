@@ -17,18 +17,16 @@ export function RecipeCard({ recipe, onViewDetail }: RecipeCardProps) {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const isSaved = isRecipeSaved(recipe.id);
 
-  const handleSaveClick = () => {
+  const handleSaveClick = async () => {
     if (!user) {
-      // If not logged in, could show login modal
-      // For now, we'll just show an alert
       alert('Silakan login terlebih dahulu untuk menyimpan resep');
       return;
     }
 
     if (isSaved) {
-      unsaveRecipe(recipe.id);
+      await unsaveRecipe(recipe.id);
     } else {
-      saveRecipe(recipe.id);
+      await saveRecipe(recipe.id, recipe.name, recipe.image);
     }
   };
 
