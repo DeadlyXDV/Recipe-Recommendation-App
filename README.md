@@ -1,16 +1,16 @@
 ## Instalasi
 
-### 2. Install Dependencies
+### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. Jalankan Backend (Terminal 1)
+### 2. Jalankan Backend (Terminal 1)
 ```bash
 npm run server
 ```
 
-### 4. Jalankan Frontend (Terminal 2)
+### 3. Jalankan Frontend (Terminal 2)
 ```bash
 npm run dev
 ```
