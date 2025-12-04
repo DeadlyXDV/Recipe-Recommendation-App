@@ -1,33 +1,10 @@
--- Database: recipe_app
--- Version: 2.0
--- Last Updated: 2025-12-04
--- Description: Recipe Recommendation App with likes, comments, and recommendation system
+-- Migration: Add Likes, Comments, and User Interactions Tables
+-- Date: 2025-12-04
+-- Description: Adds support for recipe likes, comments, and recommendation tracking
 
-CREATE DATABASE IF NOT EXISTS recipe_app;
 USE recipe_app;
 
--- Tabel Users untuk menyimpan data pengguna
-CREATE TABLE IF NOT EXISTS users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Tabel Saved Recipes untuk menyimpan resep yang disimpan pengguna
-CREATE TABLE IF NOT EXISTS saved_recipes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  recipe_id VARCHAR(255) NOT NULL,
-  recipe_name VARCHAR(255) NOT NULL,
-  recipe_image TEXT,
-  saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  UNIQUE KEY unique_user_recipe (user_id, recipe_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Tabel Recipe Likes untuk menyimpan like pada resep
+-- Table for recipe likes
 CREATE TABLE IF NOT EXISTS recipe_likes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -39,7 +16,7 @@ CREATE TABLE IF NOT EXISTS recipe_likes (
   INDEX idx_user_likes (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabel Recipe Comments untuk menyimpan komentar pada resep
+-- Table for recipe comments
 CREATE TABLE IF NOT EXISTS recipe_comments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -53,7 +30,7 @@ CREATE TABLE IF NOT EXISTS recipe_comments (
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabel User Recipe Interactions untuk tracking interaksi user (algoritma rekomendasi)
+-- Table for user recipe interactions (for recommendation algorithm)
 CREATE TABLE IF NOT EXISTS user_recipe_interactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -69,6 +46,5 @@ CREATE TABLE IF NOT EXISTS user_recipe_interactions (
   INDEX idx_recipe_area (recipe_area)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Index untuk meningkatkan performa query
-CREATE INDEX IF NOT EXISTS idx_user_id ON saved_recipes(user_id);
-CREATE INDEX IF NOT EXISTS idx_email ON users(email);
+-- Add comment to track migration
+SELECT 'Migration completed: Likes, Comments, and User Interactions tables created successfully' AS status;

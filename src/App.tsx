@@ -3,7 +3,8 @@ import { IngredientSelector } from './components/ingredient-selector';
 import { RecipeResults } from './components/recipe-results';
 import { RecipeDetail } from './components/recipe-detail';
 import { SavedRecipes } from './components/saved-recipes';
-import { Search, ChefHat, LogIn, LogOut, User, Bookmark, Filter } from 'lucide-react';
+import { RecommendedRecipes } from './components/recommended-recipes';
+import { Search, ChefHat, LogIn, LogOut, User, Bookmark, Filter, Sparkles } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { LoginModal } from './components/auth/login-modal';
 import { SignupModal } from './components/auth/signup-modal';
@@ -52,9 +53,10 @@ interface MealDBMeal {
 
 interface HeaderAuthContentProps {
   onViewSaved: () => void;
+  onViewRecommendations: () => void;
 }
 
-function HeaderAuthContent({ onViewSaved }: HeaderAuthContentProps) {
+function HeaderAuthContent({ onViewSaved, onViewRecommendations }: HeaderAuthContentProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const { user, logout, savedRecipes } = useAuth();
@@ -117,6 +119,10 @@ function HeaderAuthContent({ onViewSaved }: HeaderAuthContentProps) {
             <Bookmark className="w-4 h-4 mr-2" />
             <span>{savedRecipes.length} Resep Tersimpan</span>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={onViewRecommendations}>
+            <Sparkles className="w-4 h-4 mr-2" />
+            <span>Resep Untuk Anda</span>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout} className="text-red-600">
             <LogOut className="w-4 h-4 mr-2" />
@@ -135,7 +141,7 @@ function AppContent() {
   const [hasSearched, setHasSearched] = useState(false);
   const [ingredientModalOpen, setIngredientModalOpen] = useState(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'home' | 'saved'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'saved' | 'recommendations'>('home');
 
   const getMealDetails = async (mealId: string): Promise<MealDBMeal | null> => {
     try {
@@ -326,50 +332,85 @@ function AppContent() {
                     <p className="text-sm text-orange-600">Temukan resep dari bahan yang Anda punya</p>
                   </div>
                 </div>
-                <HeaderAuthContent onViewSaved={() => setCurrentView('saved')} />
+                <HeaderAuthContent 
+                  onViewSaved={() => setCurrentView('saved')}
+                  onViewRecommendations={() => setCurrentView('recommendations')}
+                />
               </div>
             </div>
           </header>
 
           {/* Main Content */}
           <main className="flex-grow container mx-auto px-4 py-8">
-            {/* Action Bar */}
-            <div className="mb-6 flex items-center justify-between bg-white rounded-xl shadow-sm border border-orange-100 p-4">
-              <div className="flex items-center gap-3">
-                <Filter className="w-5 h-5 text-orange-600" />
-                <div>
-                  <p className="text-sm text-orange-600">Bahan dipilih</p>
-                  <p className="font-semibold text-orange-900">{selectedIngredients.length} bahan</p>
+            {currentView === 'home' && (
+              <>
+                {/* Action Bar */}
+                <div className="mb-6 flex items-center justify-between bg-white rounded-xl shadow-sm border border-orange-100 p-4">
+                  <div className="flex items-center gap-3">
+                    <Filter className="w-5 h-5 text-orange-600" />
+                    <div>
+                      <p className="text-sm text-orange-600">Bahan dipilih</p>
+                      <p className="font-semibold text-orange-900">{selectedIngredients.length} bahan</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => setIngredientModalOpen(true)}
+                      variant="outline"
+                      className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                    >
+                      <Filter className="w-4 h-4 mr-2" />
+                      Pilih Bahan
+                    </Button>
+                    <Button
+                      onClick={handleSearch}
+                      disabled={selectedIngredients.length === 0 || isLoading}
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      <Search className="w-4 h-4 mr-2" />
+                      {isLoading ? 'Mencari...' : 'Cari Resep'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setIngredientModalOpen(true)}
-                  variant="outline"
-                  className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                >
-                  <Filter className="w-4 h-4 mr-2" />
-                  Pilih Bahan
-                </Button>
-                <Button
-                  onClick={handleSearch}
-                  disabled={selectedIngredients.length === 0 || isLoading}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  {isLoading ? 'Mencari...' : 'Cari Resep'}
-                </Button>
-              </div>
-            </div>
 
-            {/* Recipe Results - Full Width */}
-            <RecipeResults
-              recipes={recipes}
-              isLoading={isLoading}
-              hasSearched={hasSearched}
-              selectedIngredients={selectedIngredients}
-              onViewDetail={(recipeId) => setSelectedRecipeId(recipeId)}
-            />
+                {/* Recipe Results - Full Width */}
+                <RecipeResults
+                  recipes={recipes}
+                  isLoading={isLoading}
+                  hasSearched={hasSearched}
+                  selectedIngredients={selectedIngredients}
+                  onViewDetail={(recipeId) => setSelectedRecipeId(recipeId)}
+                />
+              </>
+            )}
+
+            {currentView === 'recommendations' && (
+              <>
+                {/* Back Button */}
+                <Button
+                  onClick={() => setCurrentView('home')}
+                  variant="outline"
+                  className="mb-6 border-orange-300 text-orange-700 hover:bg-orange-50"
+                >
+                  ← Kembali ke Beranda
+                </Button>
+                <RecommendedRecipes onRecipeClick={(recipeId) => setSelectedRecipeId(recipeId)} />
+              </>
+            )}
+
+            {currentView === 'saved' && (
+              <>
+                {/* Back Button */}
+                <Button
+                  onClick={() => setCurrentView('home')}
+                  variant="outline"
+                  className="mb-6 border-orange-300 text-orange-700 hover:bg-orange-50"
+                >
+                  ← Kembali ke Beranda
+                </Button>
+                <SavedRecipes onRecipeClick={(recipeId) => setSelectedRecipeId(recipeId)} />
+              </>
+            )}
           </main>
 
           {/* Footer */}

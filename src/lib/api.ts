@@ -69,5 +69,68 @@ export const recipeAPI = {
       headers: getAuthHeaders()
     });
     return response.json();
+  },
+
+  // Like API
+  toggleLike: async (recipeId: string) => {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}/like`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  getLikeCount: async (recipeId: string) => {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}/likes/count`, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  getLikeStatus: async (recipeId: string) => {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}/likes/status`, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  getLikedRecipes: async () => {
+    const response = await fetch(`${API_URL}/recipes/liked`, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  // Comment API
+  addComment: async (recipeId: string, commentText: string) => {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}/comments`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ commentText })
+    });
+    return response.json();
+  },
+
+  getComments: async (recipeId: string) => {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}/comments`, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  deleteComment: async (recipeId: string, commentId: number) => {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  // Recommendation API
+  getRecommendations: async () => {
+    const response = await fetch(`${API_URL}/recipes/recommendations`, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
   }
 };
