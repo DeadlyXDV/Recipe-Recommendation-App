@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, ChefHat, Globe, Bookmark, BookmarkCheck, ExternalLink, Heart, Trash2, Send, Share2, Copy, Check, Languages } from 'lucide-react';
+import { ArrowLeft, Clock, ChefHat, Globe, Bookmark, BookmarkCheck, ExternalLink, Heart, Trash2, Send, Share2, Copy, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,7 +7,6 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Textarea } from './ui/textarea';
 import { useAuth } from '../contexts/auth-context';
 import { recipeAPI } from '../lib/api';
-import { translateArray, translateLongText } from '../lib/translate';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,12 +61,6 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
 
   // Share state
   const [isCopied, setIsCopied] = useState(false);
-
-  // Translation state
-  const [translatedIngredients, setTranslatedIngredients] = useState<string[]>([]);
-  const [translatedInstructions, setTranslatedInstructions] = useState('');
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [isTranslated, setIsTranslated] = useState(false);
 
   useEffect(() => {
     const fetchRecipeDetail = async () => {
@@ -270,40 +263,7 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
     return ingredients;
   };
 
-  const handleTranslate = async () => {
-    if (!meal || isTranslating) return;
 
-    // Toggle: jika sudah translate, kembali ke bahasa asli
-    if (isTranslated) {
-      setIsTranslated(false);
-      return;
-    }
-
-    setIsTranslating(true);
-
-    try {
-      const ingredients = getIngredients(meal);
-      
-      // Translate ingredients (gabung ingredient + measure)
-      const ingredientTexts = ingredients.map(ing => 
-        `${ing.measure} ${ing.ingredient}`.trim()
-      );
-      
-      const translatedIngs = await translateArray(ingredientTexts);
-      setTranslatedIngredients(translatedIngs);
-
-      // Translate instructions
-      const translatedInst = await translateLongText(meal.strInstructions);
-      setTranslatedInstructions(translatedInst);
-
-      setIsTranslated(true);
-    } catch (error) {
-      console.error('Error translating:', error);
-      alert('Gagal menerjemahkan resep. Silakan coba lagi.');
-    } finally {
-      setIsTranslating(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -348,17 +308,6 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
               Kembali ke Hasil
             </Button>
             <div className="flex items-center gap-3">
-              {/* Translate Button */}
-              <Button
-                onClick={handleTranslate}
-                disabled={isTranslating}
-                variant="outline"
-                className="border-orange-300 text-orange-700 hover:bg-orange-50"
-              >
-                <Languages className="w-4 h-4 mr-2" />
-                {isTranslating ? 'Menerjemahkan...' : isTranslated ? 'Bahasa Asli' : 'Terjemahkan'}
-              </Button>
-
               {/* Share Button */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -486,39 +435,19 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
             <div className="lg:col-span-1">
               <Card className="border-orange-100 sticky top-24">
                 <CardHeader>
-                  <CardTitle className="text-orange-900">
-                    Bahan-Bahan
-                    {isTranslated && (
-                      <Badge className="ml-2 bg-green-100 text-green-700 border-green-300">
-                        Diterjemahkan
-                      </Badge>
-                    )}
-                  </CardTitle>
+                  <CardTitle className="text-orange-900">Bahan-Bahan</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {isTranslated ? (
-                      // Tampilkan versi terjemahan
-                      translatedIngredients.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start p-3 bg-green-50 rounded-lg border border-green-100"
-                        >
-                          <span className="text-gray-900">{item}</span>
-                        </div>
-                      ))
-                    ) : (
-                      // Tampilkan versi asli
-                      ingredients.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-start p-3 bg-orange-50 rounded-lg border border-orange-100"
-                        >
-                          <span className="text-orange-900 capitalize flex-1">{item.ingredient}</span>
-                          <span className="text-orange-600 text-sm ml-2">{item.measure}</span>
-                        </div>
-                      ))
-                    )}
+                    {ingredients.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-start p-3 bg-orange-50 rounded-lg border border-orange-100"
+                      >
+                        <span className="text-orange-900 capitalize flex-1">{item.ingredient}</span>
+                        <span className="text-orange-600 text-sm ml-2">{item.measure}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -528,58 +457,42 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
             <div className="lg:col-span-2">
               <Card className="border-orange-100">
                 <CardHeader>
-                  <CardTitle className="text-orange-900">
-                    Cara Memasak
-                    {isTranslated && (
-                      <Badge className="ml-2 bg-green-100 text-green-700 border-green-300">
-                        Diterjemahkan
-                      </Badge>
-                    )}
-                  </CardTitle>
+                  <CardTitle className="text-orange-900">Cara Memasak</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-orange max-w-none">
-                    {isTranslated ? (
-                      // Tampilkan versi terjemahan
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                        {translatedInstructions.split('\n').map((paragraph, index) => {
-                          if (!paragraph.trim()) return null;
+                  <div className="max-w-none">
+                    <div className="space-y-5">
+                      {meal.strInstructions.split('\n').map((paragraph, index) => {
+                        if (!paragraph.trim()) return null;
+                        
+                        // Check if it's a numbered step
+                        const stepMatch = paragraph.match(/^(\d+[\.)]\s*)/);
+                        
+                        if (stepMatch) {
+                          const stepNumber = stepMatch[1].replace(/[.)\s]/g, '');
+                          const stepText = paragraph.replace(stepMatch[1], '').trim();
                           
                           return (
-                            <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
-                              {paragraph}
-                            </p>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      // Tampilkan versi asli
-                      meal.strInstructions.split('\n').map((paragraph, index) => {
-                      if (!paragraph.trim()) return null;
-                      
-                      // Check if it's a numbered step
-                      const stepMatch = paragraph.match(/^(\d+[\.)]\s*)/);
-                      
-                      if (stepMatch) {
-                        return (
-                          <div key={index} className="mb-6 flex gap-4">
-                            <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center">
-                              {stepMatch[1].replace(/[.)\s]/g, '')}
+                            <div key={index} className="flex gap-4 bg-orange-50 p-4 rounded-lg border border-orange-200 hover:border-orange-300 transition-colors">
+                              <div className="flex-shrink-0">
+                                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg flex items-center justify-center font-bold text-lg shadow-sm">
+                                  {stepNumber}
+                                </div>
+                              </div>
+                              <p className="text-gray-700 leading-relaxed pt-2 flex-1">
+                                {stepText}
+                              </p>
                             </div>
-                            <p className="text-gray-700 leading-relaxed pt-1">
-                              {paragraph.replace(stepMatch[1], '').trim()}
-                            </p>
-                          </div>
+                          );
+                        }
+                        
+                        return (
+                          <p key={index} className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            {paragraph}
+                          </p>
                         );
-                      }
-                      
-                      return (
-                        <p key={index} className="text-gray-700 leading-relaxed mb-4">
-                          {paragraph}
-                        </p>
-                      );
-                    })
-                    )}
+                      })}
+                    </div>
                   </div>
 
                   {/* YouTube Link */}
