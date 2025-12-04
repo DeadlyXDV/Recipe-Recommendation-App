@@ -255,6 +255,21 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
     }
   };
 
+  const getIngredients = (meal: MealDetail): Array<{ ingredient: string; measure: string }> => {
+    const ingredients: Array<{ ingredient: string; measure: string }> = [];
+    for (let i = 1; i <= 20; i++) {
+      const ingredient = meal[`strIngredient${i}`];
+      const measure = meal[`strMeasure${i}`];
+      if (ingredient && ingredient.trim()) {
+        ingredients.push({
+          ingredient: ingredient.trim(),
+          measure: measure?.trim() || '',
+        });
+      }
+    }
+    return ingredients;
+  };
+
   const handleTranslate = async () => {
     if (!meal || isTranslating) return;
 
@@ -288,21 +303,6 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
     } finally {
       setIsTranslating(false);
     }
-  };
-
-  const getIngredients = (meal: MealDetail): Array<{ ingredient: string; measure: string }> {
-    const ingredients: Array<{ ingredient: string; measure: string }> = [];
-    for (let i = 1; i <= 20; i++) {
-      const ingredient = meal[`strIngredient${i}`];
-      const measure = meal[`strMeasure${i}`];
-      if (ingredient && ingredient.trim()) {
-        ingredients.push({
-          ingredient: ingredient.trim(),
-          measure: measure?.trim() || '',
-        });
-      }
-    }
-    return ingredients;
   };
 
   if (isLoading) {
@@ -578,7 +578,8 @@ export function RecipeDetail({ recipeId, onBack }: RecipeDetailProps) {
                           {paragraph}
                         </p>
                       );
-                    })}
+                    })
+                    )}
                   </div>
 
                   {/* YouTube Link */}
