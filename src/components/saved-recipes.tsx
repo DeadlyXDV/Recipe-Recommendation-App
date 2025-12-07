@@ -73,7 +73,7 @@ export function SavedRecipes({ onBack, onViewDetail }: SavedRecipesProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-orange-100 shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
@@ -104,7 +104,7 @@ export function SavedRecipes({ onBack, onViewDetail }: SavedRecipesProps) {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-7xl mx-auto">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20">
@@ -208,7 +208,7 @@ export function SavedRecipes({ onBack, onViewDetail }: SavedRecipesProps) {
       </main>
 
       {/* Footer */}
-      <footer className="mt-16 py-8 bg-white border-t border-orange-100">
+      <footer className="py-8 bg-white border-t border-orange-100 mt-auto">
         <div className="container mx-auto px-4 text-center text-sm text-orange-600">
           <p>Powered by TheMealDB API</p>
         </div>
