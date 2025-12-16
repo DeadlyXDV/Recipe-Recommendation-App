@@ -10,7 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Search, ChefHat } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { theme } from '../theme';
 import { globalStyles } from '../styles/globalStyles';
 import { INGREDIENTS, CATEGORIES } from '../constants/ingredients';
