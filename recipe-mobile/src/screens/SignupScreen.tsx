@@ -15,10 +15,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 import { globalStyles } from '../styles/globalStyles';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../types/navigation';
+import { RootStackParamList } from '../types/navigation';
 
 type SignupScreenProps = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'Signup'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Signup'>;
 };
 
 export default function SignupScreen({ navigation }: SignupScreenProps) {
@@ -42,7 +42,10 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
     setIsLoading(true);
     try {
       const success = await signup(name, email, password);
-      if (!success) {
+      if (success) {
+        // Signup berhasil, kembali ke screen sebelumnya
+        navigation.goBack();
+      } else {
         Alert.alert('Error', 'Email sudah terdaftar atau terjadi kesalahan');
       }
     } catch (error) {

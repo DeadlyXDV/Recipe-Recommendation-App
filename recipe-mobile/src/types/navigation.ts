@@ -2,6 +2,8 @@
 export type RootStackParamList = {
   MainTabs: undefined;
   RecipeDetail: { recipeId: string };
+  Login: undefined;
+  Signup: undefined;
 };
 
 export type AuthStackParamList = {

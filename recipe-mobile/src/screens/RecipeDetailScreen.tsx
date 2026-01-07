@@ -32,7 +32,7 @@ interface Comment {
   created_at: string;
 }
 
-export default function RecipeDetailScreen({ route }: RecipeDetailScreenProps) {
+export default function RecipeDetailScreen({ route, navigation }: RecipeDetailScreenProps) {
   const { recipeId } = route.params;
   const { user, isRecipeSaved, saveRecipe, unsaveRecipe, isRecipeLiked, toggleLike } = useAuth();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -46,9 +46,11 @@ export default function RecipeDetailScreen({ route }: RecipeDetailScreenProps) {
 
   useEffect(() => {
     loadRecipe();
-    loadLikeData();
-    loadComments();
-  }, [recipeId]);
+    if (user) {
+      loadLikeData();
+      loadComments();
+    }
+  }, [recipeId, user]);
 
   useEffect(() => {
     if (recipe) {
@@ -69,28 +71,53 @@ export default function RecipeDetailScreen({ route }: RecipeDetailScreenProps) {
   };
 
   const loadLikeData = async () => {
+    if (!user) {
+      setLikeCount(0);
+      return;
+    }
     try {
       const countResponse = await recipeAPI.getLikeCount(recipeId);
       if (countResponse.success) {
         setLikeCount(countResponse.data.count);
       }
     } catch (error) {
-      console.error('Error loading like data:', error);
+      // Ignore 401 errors for guest users
+      if (error.response?.status !== 401) {
+        console.error('Error loading like data:', error);
+      }
     }
   };
 
   const loadComments = async () => {
+    if (!user) {
+      setComments([]);
+      return;
+    }
     try {
       const response = await recipeAPI.getComments(recipeId);
       if (response.success) {
         setComments(response.data);
       }
     } catch (error) {
-      console.error('Error loading comments:', error);
+      // Ignore 401 errors for guest users
+      if (error.response?.status !== 401) {
+        console.error('Error loading comments:', error);
+      }
     }
   };
 
   const handleSaveToggle = async () => {
+    if (!user) {
+      Alert.alert(
+        'Login Diperlukan',
+        'Silakan login untuk menyimpan resep',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Login', onPress: () => navigation.navigate('Login') }
+        ]
+      );
+      return;
+    }
     if (!recipe) return;
     try {
       if (isSaved) {
@@ -105,6 +132,17 @@ export default function RecipeDetailScreen({ route }: RecipeDetailScreenProps) {
   };
 
   const handleLikeToggle = async () => {
+    if (!user) {
+      Alert.alert(
+        'Login Diperlukan',
+        'Silakan login untuk memberikan like',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Login', onPress: () => navigation.navigate('Login') }
+        ]
+      );
+      return;
+    }
     try {
       const result = await toggleLike(recipeId);
       setIsLiked(result.isLiked);
@@ -115,6 +153,17 @@ export default function RecipeDetailScreen({ route }: RecipeDetailScreenProps) {
   };
 
   const handleAddComment = async () => {
+    if (!user) {
+      Alert.alert(
+        'Login Diperlukan',
+        'Silakan login untuk menambahkan komentar',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Login', onPress: () => navigation.navigate('Login') }
+        ]
+      );
+      return;
+    }
     if (!newComment.trim()) return;
     if (newComment.length > 500) {
       Alert.alert('Error', 'Komentar maksimal 500 karakter');
@@ -228,11 +277,14 @@ export default function RecipeDetailScreen({ route }: RecipeDetailScreenProps) {
           {/* Ingredients */}
           <View style={styles.section}>
             <Text style={globalStyles.headingMedium}>Bahan-bahan</Text>
-            <View style={styles.ingredientsList}>
+            <View style={styles.ingredientsCard}>
               {ingredients.map((ing, index) => (
-                <View key={index} style={styles.ingredientItem}>
-                  <Text style={styles.ingredientMeasure}>{ing.measure}</Text>
-                  <Text style={styles.ingredientName}>{ing.ingredient}</Text>
+                <View key={`ingredient-${index}-${ing.ingredient}`} style={styles.ingredientItem}>
+                  <View style={styles.bulletPoint} />
+                  <View style={styles.ingredientContent}>
+                    <Text style={styles.ingredientName}>{ing.ingredient}</Text>
+                    <Text style={styles.ingredientMeasure}>{ing.measure}</Text>
+                  </View>
                 </View>
               ))}
             </View>
@@ -241,7 +293,20 @@ export default function RecipeDetailScreen({ route }: RecipeDetailScreenProps) {
           {/* Instructions */}
           <View style={styles.section}>
             <Text style={globalStyles.headingMedium}>Cara Membuat</Text>
-            <Text style={globalStyles.bodyText}>{recipe.strInstructions}</Text>
+            <View style={styles.instructionsCard}>
+              {recipe.strInstructions ? (
+                recipe.strInstructions.split(/\r?\n/).filter(step => step.trim()).map((step, index) => (
+                  <View key={`step-${index}`} style={styles.stepItem}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>{index + 1}</Text>
+                    </View>
+                    <Text style={styles.stepText}>{step.trim()}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={globalStyles.bodyText}>Instruksi tidak tersedia</Text>
+              )}
+            </View>
           </View>
 
           {/* Comments */}
@@ -342,24 +407,71 @@ const styles = StyleSheet.create({
   section: {
     gap: theme.spacing[4],
   },
-  ingredientsList: {
-    gap: theme.spacing[2],
+  ingredientsCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing[4],
+    gap: theme.spacing[3],
   },
   ingredientItem: {
     flexDirection: 'row',
-    gap: theme.spacing[2],
+    gap: theme.spacing[3],
+    alignItems: 'flex-start',
   },
-  ingredientMeasure: {
-    fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.orange700,
-    minWidth: 80,
+  bulletPoint: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.orange500,
+    marginTop: 8,
+  },
+  ingredientContent: {
+    flex: 1,
+    gap: theme.spacing[1],
   },
   ingredientName: {
     fontSize: theme.typography.fontSize.base,
+    fontWeight: theme.typography.fontWeight.medium,
     color: theme.colors.foreground,
-    flex: 1,
     textTransform: 'capitalize',
+  },
+  ingredientMeasure: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.orange700,
+  },
+  instructionsCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing[4],
+    gap: theme.spacing[5],
+  },
+  stepItem: {
+    flexDirection: 'row',
+    gap: theme.spacing[3],
+    alignItems: 'flex-start',
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.orange500,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepNumberText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.background,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.foreground,
+    lineHeight: 24,
   },
   addCommentContainer: {
     flexDirection: 'row',

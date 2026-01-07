@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,28 +9,31 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bookmark } from 'lucide-react-native';
+import { BlurView } from 'expo-blur';
+import { Bookmark, LogIn } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
 import { mealDBApi } from '../services/mealDBApi';
 import { Recipe } from '../types/recipe';
 import { theme } from '../theme';
 import { globalStyles } from '../styles/globalStyles';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SavedScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { savedRecipes, loadSavedRecipes } = useAuth();
+  const { user, savedRecipes, loadSavedRecipes } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
-      loadRecipeDetails();
-    }, [savedRecipes])
+      if (user) {
+        loadRecipeDetails();
+      }
+    }, [savedRecipes, user])
   );
 
   const loadRecipeDetails = async () => {
@@ -77,11 +80,50 @@ export default function SavedScreen() {
     <View style={styles.emptyState}>
       <Bookmark size={64} color={theme.colors.mutedForeground} />
       <Text style={globalStyles.headingMedium}>Belum Ada Resep Tersimpan</Text>
-      <Text style={globalStyles.mutedText}>
+      <Text style={[globalStyles.mutedText, { textAlign: 'center' }]}>
         Simpan resep favorit Anda untuk akses mudah
       </Text>
     </View>
   );
+
+  const LoginPrompt = () => (
+    <View style={styles.loginOverlay}>
+      <BlurView intensity={80} style={styles.blurContainer}>
+        <LogIn size={48} color={theme.colors.orange500} />
+        <Text style={styles.loginTitle}>Login Diperlukan</Text>
+        <Text style={styles.loginSubtitle}>
+          Masuk untuk menyimpan resep favorit
+        </Text>
+        <TouchableOpacity
+          style={globalStyles.buttonPrimary}
+          onPress={() => navigation.navigate('Login')}
+        >
+          <Text style={globalStyles.buttonText}>Masuk Sekarang</Text>
+        </TouchableOpacity>
+      </BlurView>
+    </View>
+  );
+
+  if (!user) {
+    return (
+      <View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={[theme.colors.orange50, theme.colors.background, theme.colors.amber50]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={globalStyles.container}
+        >
+          <View style={globalStyles.contentContainer}>
+            <Text style={globalStyles.headingLarge}>Resep Tersimpan</Text>
+            <Text style={globalStyles.mutedText}>
+              Koleksi resep favorit Anda
+            </Text>
+          </View>
+        </LinearGradient>
+        <LoginPrompt />
+      </View>
+    );
+  }
 
   return (
     <LinearGradient
@@ -117,6 +159,33 @@ export default function SavedScreen() {
 }
 
 const styles = StyleSheet.create({
+  loginOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blurContainer: {
+    padding: theme.spacing[8],
+    borderRadius: theme.borderRadius.xl,
+    alignItems: 'center',
+    gap: theme.spacing[4],
+    width: '80%',
+    maxWidth: 320,
+  },
+  loginTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.foreground,
+  },
+  loginSubtitle: {
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.mutedForeground,
+    textAlign: 'center',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

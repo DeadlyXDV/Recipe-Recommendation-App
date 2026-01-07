@@ -14,10 +14,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 import { globalStyles } from '../styles/globalStyles';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../types/navigation';
+import { RootStackParamList } from '../types/navigation';
 
 type LoginScreenProps = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
 };
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
@@ -35,7 +35,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setIsLoading(true);
     try {
       const success = await login(email, password);
-      if (!success) {
+      if (success) {
+        // Login berhasil, kembali ke screen sebelumnya
+        navigation.goBack();
+      } else {
         Alert.alert('Error', 'Email atau password salah');
       }
     } catch (error) {

@@ -1,8 +1,12 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
 // Use environment variable for API URL
-const API_URL = process.env.API_URL || 'http://localhost:5000/api';
+const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.100.3:5000/api';
+
+console.log('🔧 API_URL:', API_URL);
+console.log('🔧 Constants.expoConfig?.extra:', Constants.expoConfig?.extra);
 
 // Create axios instance
 const apiClient = axios.create({

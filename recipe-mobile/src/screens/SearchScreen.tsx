@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Search } from 'lucide-react-native';
+import { Search, X, Plus } from 'lucide-react-native';
 import { theme } from '../theme';
 import { globalStyles } from '../styles/globalStyles';
 import { INGREDIENTS, CATEGORIES } from '../constants/ingredients';
@@ -27,6 +28,7 @@ export default function SearchScreen() {
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [recipes, setRecipes] = useState<RecipeWithScore[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const toggleIngredient = (ingredient: string) => {
     if (selectedIngredients.includes(ingredient)) {
@@ -34,6 +36,11 @@ export default function SearchScreen() {
     } else {
       setSelectedIngredients([...selectedIngredients, ingredient]);
     }
+  };
+
+  const handleSearchRecipes = async () => {
+    await searchRecipes();
+    setModalVisible(false);
   };
 
   const searchRecipes = async () => {
@@ -134,11 +141,24 @@ export default function SearchScreen() {
           Pilih bahan yang Anda miliki untuk menemukan resep
         </Text>
 
+        {/* Button to open modal */}
+        <TouchableOpacity
+          style={[globalStyles.buttonPrimary, styles.selectButton]}
+          onPress={() => setModalVisible(true)}
+        >
+          <Plus size={20} color={theme.colors.background} />
+          <Text style={globalStyles.buttonText}>
+            {selectedIngredients.length > 0 
+              ? `${selectedIngredients.length} Bahan Dipilih` 
+              : 'Pilih Bahan'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Selected Ingredients */}
         {selectedIngredients.length > 0 && (
           <View style={styles.selectedContainer}>
             <Text style={styles.selectedLabel}>
-              Dipilih: {selectedIngredients.length} bahan
+              Bahan yang dipilih:
             </Text>
             <View style={styles.selectedIngredients}>
               {selectedIngredients.map((ing) => (
@@ -148,54 +168,11 @@ export default function SearchScreen() {
                   onPress={() => toggleIngredient(ing)}
                 >
                   <Text style={globalStyles.ingredientPillText}>{ing}</Text>
+                  <X size={14} color={theme.colors.background} style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
               ))}
             </View>
           </View>
-        )}
-
-        {/* Ingredient Categories */}
-        {CATEGORIES.map((category) => (
-          <View key={category} style={styles.categorySection}>
-            <Text style={styles.categoryTitle}>{category}</Text>
-            <View style={styles.ingredientGrid}>
-              {INGREDIENTS.filter((i) => i.category === category).map((ingredient) => (
-                <TouchableOpacity
-                  key={ingredient.name}
-                  style={[
-                    styles.ingredientItem,
-                    selectedIngredients.includes(ingredient.name) && styles.ingredientItemSelected,
-                  ]}
-                  onPress={() => toggleIngredient(ingredient.name)}
-                >
-                  <View style={styles.checkbox}>
-                    {selectedIngredients.includes(ingredient.name) && (
-                      <View style={styles.checkboxChecked} />
-                    )}
-                  </View>
-                  <Text style={styles.ingredientLabel}>{ingredient.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        ))}
-
-        {/* Search Button */}
-        {selectedIngredients.length > 0 && (
-          <TouchableOpacity
-            style={[globalStyles.buttonPrimary, styles.searchButton]}
-            onPress={searchRecipes}
-            disabled={isSearching}
-          >
-            {isSearching ? (
-              <ActivityIndicator color={theme.colors.background} />
-            ) : (
-              <>
-                <Search size={16} color={theme.colors.background} />
-                <Text style={globalStyles.buttonText}>Cari Resep ({selectedIngredients.length} bahan)</Text>
-              </>
-            )}
-          </TouchableOpacity>
         )}
 
         {/* Recipe Results */}
@@ -214,11 +191,109 @@ export default function SearchScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Ingredient Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => !isSearching && setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Loading Overlay */}
+            {isSearching && (
+              <View style={styles.loadingOverlay}>
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={theme.colors.orange500} />
+                  <Text style={styles.loadingText}>Mencari resep...</Text>
+                  <Text style={styles.loadingSubText}>
+                    {selectedIngredients.length} bahan dipilih
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={globalStyles.headingMedium}>Pilih Bahan</Text>
+              <TouchableOpacity 
+                onPress={() => setModalVisible(false)}
+                disabled={isSearching}
+              >
+                <X size={24} color={isSearching ? theme.colors.neutral400 : theme.colors.neutral700} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Ingredient List */}
+            <ScrollView style={styles.modalScroll}>
+              {CATEGORIES.map((category) => (
+                <View key={category} style={styles.categorySection}>
+                  <Text style={styles.categoryTitle}>{category}</Text>
+                  <View style={styles.ingredientGrid}>
+                    {INGREDIENTS.filter((i) => i.category === category).map((ingredient) => (
+                      <TouchableOpacity
+                        key={ingredient.name}
+                        style={[
+                          styles.ingredientItem,
+                          selectedIngredients.includes(ingredient.name) && styles.ingredientItemSelected,
+                        ]}
+                        onPress={() => toggleIngredient(ingredient.name)}
+                      >
+                        <View style={styles.checkbox}>
+                          {selectedIngredients.includes(ingredient.name) && (
+                            <View style={styles.checkboxChecked} />
+                          )}
+                        </View>
+                        <Text style={styles.ingredientLabel}>{ingredient.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            {/* Modal Footer */}
+            <View style={styles.modalFooter}>
+              {selectedIngredients.length > 0 ? (
+                <TouchableOpacity
+                  style={[globalStyles.buttonPrimary, styles.searchButton]}
+                  onPress={handleSearchRecipes}
+                  disabled={isSearching}
+                >
+                  {isSearching ? (
+                    <ActivityIndicator color={theme.colors.background} />
+                  ) : (
+                    <>
+                      <Search size={20} color={theme.colors.background} />
+                      <Text style={globalStyles.buttonText}>
+                        Cari Resep ({selectedIngredients.length} bahan)
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[globalStyles.buttonSecondary, styles.closeButton]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={[globalStyles.buttonText, { color: theme.colors.foreground }]}>
+                    Tutup
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  selectButton: {
+    marginTop: theme.spacing[6],
+  },
   selectedContainer: {
     marginTop: theme.spacing[6],
     gap: theme.spacing[3],
@@ -233,8 +308,72 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: theme.spacing[2],
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: theme.spacing[4],
+    borderTopRightRadius: theme.spacing[4],
+    maxHeight: '80%',
+    position: 'relative',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    zIndex: 999,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopLeftRadius: theme.spacing[4],
+    borderTopRightRadius: theme.spacing[4],
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    gap: theme.spacing[4],
+  },
+  loadingText: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.orange900,
+  },
+  loadingSubText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.neutral600,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  modalScroll: {
+    padding: theme.spacing[4],
+    maxHeight: '70%',
+  },
+  modalFooter: {
+    padding: theme.spacing[4],
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+  },
+  searchButton: {
+    width: '100%',
+    minHeight: 48,
+  },
+  closeButton: {
+    width: '100%',
+    minHeight: 48,
+  },
   categorySection: {
-    marginTop: theme.spacing[6],
+    marginBottom: theme.spacing[6],
     gap: theme.spacing[3],
   },
   categoryTitle: {

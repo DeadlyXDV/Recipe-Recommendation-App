@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { authAPI, recipeAPI } from '../services/api';
+import axios from 'axios';
 
 interface User {
   id: string;
@@ -101,7 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('🔐 Attempting login:', { email, password: '***' });
       const response = await authAPI.login(email, password);
+      console.log('🔐 Login response:', response);
 
       if (response.success) {
         const userData = {
@@ -110,15 +113,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: response.data.user.email,
         };
 
-        setUser(userData);
-        await SecureStore.setItemAsync('user', JSON.stringify(userData));
+        // PENTING: Simpan token DULU sebelum setUser untuk menghindari race condition
         await SecureStore.setItemAsync('token', response.data.token);
+        await SecureStore.setItemAsync('user', JSON.stringify(userData));
+        
+        // Setelah token tersimpan, baru update state user
+        setUser(userData);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Axios error details:', {
+          message: error.message,
+          code: error.code,
+          config: { baseURL: error.config?.baseURL, url: error.config?.url },
+          response: error.response?.data,
+        });
+      }
       return false;
     }
   };
@@ -138,9 +152,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: response.data.user.email,
         };
 
-        setUser(userData);
-        await SecureStore.setItemAsync('user', JSON.stringify(userData));
+        // PENTING: Simpan token DULU sebelum setUser untuk menghindari race condition
         await SecureStore.setItemAsync('token', response.data.token);
+        await SecureStore.setItemAsync('user', JSON.stringify(userData));
+        
+        // Setelah token tersimpan, baru update state user
+        setUser(userData);
         return true;
       }
 
